@@ -117,7 +117,7 @@ func main() {
 		qnames = []string{domain}
 		qType, qtypeErr := query.QTypeStrToDNSQtype(qTypeStr)
 		if qtypeErr != nil {
-			log.Fatalf("%v", err)
+			log.Fatalf("%v", qtypeErr)
 		}
 		qtypes = []dns.Type{qType}
 	}
@@ -220,7 +220,7 @@ func main() {
 				case <-samplingTicker.C:
 					sampledMetrics := runState.ExportIntermediateResults()
 					repErr := reporter.ReportMetrics(sampledMetrics)
-					if err != nil {
+					if repErr != nil {
 						log.Errorf("Failed to report metrics %v", repErr)
 					}
 				case <-periodicReporterStop:
@@ -241,7 +241,7 @@ func main() {
 			wg.Add(1)
 			go func() {
 				qErr := query.RunQueries(dport, host, qnames, timeout, randomiseQueries, qtypes, time.Now, runState, sigPause)
-				if err != nil {
+				if qErr != nil {
 					log.Errorf("Failed to run queries %v", qErr)
 				}
 				wg.Done()
