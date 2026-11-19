@@ -483,7 +483,8 @@ func (h *FBDNSDB) ServeDNSWithRCODE(ctx context.Context, w dns.ResponseWriter, r
 	// Pop a label and find the authority below.
 	// https://tools.ietf.org/html/rfc3658#section-2.2.1.1
 	// https://lists.isc.org/pipermail/bind-users/2018-September/100668.html
-	if !auth && state.QType() == dns.TypeDS {
+	// The root name has no label to pop.
+	if !auth && state.QType() == dns.TypeDS && len(packedQName) > 1 {
 		_, auth, zoneCut, err = reader.IsAuthoritative(packedQName[packedQName[0]+1:], loc.LocID)
 		if err != nil {
 			h.stats.IncrementCounter("DNS_error.is_authoritative")

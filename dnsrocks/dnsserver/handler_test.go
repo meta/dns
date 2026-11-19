@@ -1159,6 +1159,31 @@ func TestCNAMEchasing(t *testing.T) {
 	}
 }
 
+// TestRootDSWithoutRootSOA checks that a DS query for the root name gets a response when the
+// database holds NS records for the root but no root SOA.
+func TestRootDSWithoutRootSOA(t *testing.T) {
+	ns, err := dns.NewRR(". 3600 IN NS a.root-servers.test.")
+	require.NoError(t, err)
+	for _, db := range testaid.CompileTestDBs(t, "&.,,a.root-servers.test,3600,,\n") {
+		t.Run(fmt.Sprintf("%s/%s", db.Driver, db.Flavour), func(t *testing.T) {
+			th := OpenDbForTesting(t, &db)
+			defer th.Close()
+			req := new(dns.Msg)
+			req.SetQuestion(".", dns.TypeDS)
+			rec := dnstest.NewRecorder(&test.ResponseWriterCustomRemote{RemoteIP: "1.1.1.1"})
+			var code int
+			require.NotPanics(t, func() {
+				code, err = th.ServeDNSWithRCODE(CreateTestContext(1), rec, req)
+			})
+			require.NoError(t, err)
+			require.Equal(t, dns.RcodeSuccess, code)
+			require.NotNil(t, rec.Msg)
+			require.False(t, rec.Msg.Authoritative)
+			RRSliceMatch(t, []dns.RR{ns}, rec.Msg.Ns)
+		})
+	}
+}
+
 func TestResolverBasedResponse(t *testing.T) {
 	testCases := []struct {
 		qname          string

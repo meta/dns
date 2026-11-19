@@ -131,6 +131,32 @@ func Run(m *testing.M, relativePath string) int {
 	return m.Run()
 }
 
+// CompileTestDBs compiles data, in dnsrocks-data text format, into a CDB and RocksDB
+// databases with v1 and v2 keys under t.TempDir(), and returns them.
+func CompileTestDBs(t testing.TB, data string) []TestDB {
+	dir := t.TempDir()
+	input := path.Join(dir, inputFileName)
+	require.NoError(t, os.WriteFile(input, []byte(data), 0o600))
+	rdbDir := path.Join(dir, "rdb")
+	rdbDirV2 := path.Join(dir, "rdb-v2")
+	cdbPath := path.Join(dir, cdbFileName)
+	require.NoError(t, os.Mkdir(rdbDir, 0o755))
+	require.NoError(t, os.Mkdir(rdbDirV2, 0o755))
+	log.SetOutput(io.Discard)
+	defer log.SetOutput(os.Stderr)
+	_, err := rdb.CompileToSpecificRDBVersion(input, rdbDir, rdb.CompilationOptions{})
+	require.NoError(t, err)
+	_, err = rdb.CompileToSpecificRDBVersion(input, rdbDirV2, rdb.CompilationOptions{UseV2KeySyntax: true})
+	require.NoError(t, err)
+	_, err = cdb.CreateCDB(input, cdbPath, cdb.NewDefaultCreatorOptions())
+	require.NoError(t, err)
+	return []TestDB{
+		{Driver: "cdb", Path: cdbPath},
+		{Driver: "rocksdb", Path: rdbDir, Flavour: "keys v1"},
+		{Driver: "rocksdb", Path: rdbDirV2, Flavour: "keys v2"},
+	}
+}
+
 func pemBlockForKey(priv any) *pem.Block {
 	switch k := priv.(type) {
 	case *rsa.PrivateKey:
