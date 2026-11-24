@@ -114,6 +114,22 @@ func TestWireRecordIsImplemented(t *testing.T) {
 			location:   []byte("\002\003"),
 			ttl:        1806,
 		},
+		{
+			in:         "Btest.com,svc.test.com,1807,\003\004,1",
+			record:     &Rsvcb{},
+			wireType:   TypeSVCB,
+			domainName: "test.com",
+			location:   []byte("\003\004"),
+			ttl:        1807,
+		},
+		{
+			in:         ":test.com,28,\052\003\050\200\000\000\000\000\000\000\000\000\000\000\000\001,1808,,\004\005",
+			record:     &Raux{},
+			wireType:   TypeAAAA,
+			domainName: "test.com",
+			location:   []byte("\004\005"),
+			ttl:        1808,
+		},
 	}
 
 	for _, tc := range tests {

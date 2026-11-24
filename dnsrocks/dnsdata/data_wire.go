@@ -94,3 +94,13 @@ func (r *Rsrv1) WireType() WireType {
 func (r *Rhttps) WireType() WireType {
 	return TypeHTTPS
 }
+
+// WireType implements WireRecord interface
+func (r *Rsvcb) WireType() WireType {
+	return TypeSVCB
+}
+
+// WireType implements WireRecord interface
+func (r *Raux) WireType() WireType {
+	return r.rtype
+}
