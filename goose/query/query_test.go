@@ -16,6 +16,7 @@ package query
 import (
 	"errors"
 	"os"
+	"path/filepath"
 	"regexp"
 	"testing"
 	"time"
@@ -86,6 +87,49 @@ func Test_ProcessQueryInputFile(t *testing.T) {
 	require.Equal(t, []dns.Type{}, qtypes)
 	require.Error(t, err)
 }
+
+func Test_ProcessQueryInputFileLines(t *testing.T) {
+	tests := []struct {
+		name    string
+		input   string
+		qnames  []string
+		qtypes  []dns.Type
+		wantErr bool
+	}{
+		{
+			name:   "blank lines",
+			input:  "facebook.com A\n\n \t\ntest.com AAAA\n\n",
+			qnames: []string{"facebook.com", "test.com"},
+			qtypes: []dns.Type{dns.Type(dns.TypeA), dns.Type(dns.TypeAAAA)},
+		},
+		{
+			name:   "comment",
+			input:  "; queries for facebook.com\nfacebook.com A\n",
+			qnames: []string{"facebook.com"},
+			qtypes: []dns.Type{dns.Type(dns.TypeA)},
+		},
+		{
+			name:    "missing qtype",
+			input:   "facebook.com A\ntest.com\n",
+			wantErr: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			path := filepath.Join(t.TempDir(), "queries.txt")
+			require.NoError(t, os.WriteFile(path, []byte(tt.input), 0644))
+			qnames, qtypes, err := ProcessQueryInputFile(path)
+			if tt.wantErr {
+				require.Error(t, err)
+				return
+			}
+			require.NoError(t, err)
+			require.Equal(t, tt.qnames, qnames)
+			require.Equal(t, tt.qtypes, qtypes)
+		})
+	}
+}
+
 func Test_MakeReq(t *testing.T) {
 	//  return a time.Time that is used to generate the name being requested
 	timeFn := func() time.Time {
