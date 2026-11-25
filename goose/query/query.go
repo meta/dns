@@ -72,6 +72,13 @@ func ProcessQueryInputFile(path string) ([]string, []dns.Type, error) {
 	scanner := bufio.NewScanner(file)
 	for scanner.Scan() {
 		fields := strings.Fields(scanner.Text())
+		// Like dnsperf, skip blank lines and ';' comments.
+		if len(fields) == 0 || strings.HasPrefix(fields[0], ";") {
+			continue
+		}
+		if len(fields) < 2 {
+			return qnames, qtypes, fmt.Errorf("missing query type: %q", scanner.Text())
+		}
 		qnames = append(qnames, fields[0])
 		qtype, err := QTypeStrToDNSQtype(fields[1])
 		if err != nil {
